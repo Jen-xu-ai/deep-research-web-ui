@@ -58,4 +58,15 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
+
+  // ✅ ADD THIS SERVER CONFIGURATION:
+  nitro: {
+    serveStatic: true,
+    preset: 'node-server', // Ensures it runs properly on Render
+  },
+
+  server: {
+    host: '0.0.0.0', // Allows external access
+    port: process.env.PORT || 3000, // Use Render's assigned port
+  }
 })
