@@ -9,20 +9,26 @@ Features:
 - 🚀 **Safe & Secure**: Everything (config, API requests, ...) stays in your browser locally
 - 🕙 **Realtime feedback**: Stream AI responses and reflect on the UI in real-time
 - 🌳 **Search visualization**: Shows the research process using a tree structure. Supports searching in different languages
-- 📄 **Export as PDF**: Export the final research report as a PDF
+- 📄 **Export as PDF**: Export the final research report as Markdown / PDF
 - 🤖 **Supports more models**: Uses plain prompts instead of newer, less widely supported features like Structured Outputs. This ensures to work with more providers that haven't caught up with the latest OpenAI capabilities.
 - 🐳 **Docker support**: Deploy in your environment in one-line command
 
 Currently available providers:
 
-- AI: OpenAI compatible, DeepSeek, OpenRouter, Ollama
-- Web Search: Tavily (1000 free credits / month), Firecrawl
+- AI: OpenAI compatible, SiliconFlow, DeepSeek, OpenRouter, Ollama and more
+- Web Search: Tavily (1000 free credits / month), Firecrawl (cloud / self-hosted)
 
 Please give a 🌟 Star if you like this project!
 
 <video width="500" src="https://github.com/user-attachments/assets/8f9baa43-a74e-4613-aebb-1bcc29a686f0" controls></video>
 
 ## Recent updates
+
+25/02/18 - 25/02/20
+
+- Added: "advanced search" and "search topic" support for Tavily
+- Added: custom endpoint support for Firecrawl
+- Fixed: overall bug fixes, less "invalid JSON structure" errors
 
 25/02/17
 
@@ -125,3 +131,7 @@ Check out the [deployment documentation](https://nuxt.com/docs/getting-started/d
 ## License
 
 MIT
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=AnotiaWang/deep-research-web-ui&type=Date)](https://star-history.com/#AnotiaWang/deep-research-web-ui&Date)

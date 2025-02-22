@@ -11,6 +11,7 @@
   const {
     config,
     aiApiBase,
+    webSearchApiBase,
     showConfigManager: showModal,
   } = storeToRefs(useConfigStore())
   const { t } = useI18n()
@@ -23,8 +24,19 @@
   const aiProviderOptions = computed(() => [
     {
       label: t('settings.ai.providers.openaiCompatible.title'),
-      help: t('settings.ai.providers.openaiCompatible.description'),
+      help: 'settings.ai.providers.openaiCompatible.description',
+      // Only kept for easy reference in i18n Ally
+      _help: t('settings.ai.providers.openaiCompatible.description'),
       value: 'openai-compatible',
+    },
+    {
+      label: t('settings.ai.providers.siliconflow.title'),
+      help: 'settings.ai.providers.siliconflow.description',
+      // Only kept for easy reference in i18n Ally
+      _help: t('settings.ai.providers.siliconflow.description'),
+      value: 'siliconflow',
+      link: 'https://cloud.siliconflow.cn/i/J0NHrrX8',
+      linkText: 'cloud.siliconflow.cn',
     },
     {
       label: 'DeepSeek',
@@ -55,8 +67,10 @@
       // Only kept for easy reference in i18n Ally
       _help: t('settings.webSearch.providers.firecrawl.help'),
       link: 'https://www.firecrawl.dev/app/api-keys',
+      supportsCustomApiBase: true,
     },
   ])
+  const tavilySearchTopicOptions = ['general', 'news', 'finance']
   const selectedAiProvider = computed(() =>
     aiProviderOptions.value.find((o) => o.value === config.value.ai.provider),
   )
@@ -110,6 +124,7 @@
     config.value.ai.model = model
   }
 
+  // Automatically fetch AI models list
   watch(
     () => [
       config.value.ai.provider,
@@ -122,6 +137,24 @@
       debouncedListAiModels()
     },
     { immediate: true },
+  )
+  // Reset AI config when provider changed
+  watch(
+    () => config.value.ai.provider,
+    () => {
+      config.value.ai.apiKey = ''
+      config.value.ai.apiBase = ''
+      config.value.ai.model = ''
+      config.value.ai.contextSize = undefined
+    },
+  )
+  // Reset web search config when provider changed
+  watch(
+    () => config.value.webSearch.provider,
+    () => {
+      config.value.webSearch.apiKey = ''
+      config.value.webSearch.apiBase = ''
+    },
   )
 
   defineExpose({
@@ -141,14 +174,26 @@
           <!-- AI provider -->
           <h3 class="font-bold">{{ $t('settings.ai.provider') }}</h3>
           <UFormField>
-            <template v-if="selectedAiProvider" #help>
-              <span class="whitespace-pre-wrap">
-                {{ selectedAiProvider.help }}
-              </span>
+            <template v-if="selectedAiProvider?.help" #help>
+              <i18n-t
+                class="whitespace-pre-wrap"
+                :keypath="selectedAiProvider.help"
+                tag="span"
+              >
+                <UButton
+                  v-if="selectedAiProvider.link"
+                  class="!p-0"
+                  :to="selectedAiProvider.link"
+                  target="_blank"
+                  variant="link"
+                >
+                  {{ selectedAiProvider.linkText || selectedAiProvider.link }}
+                </UButton>
+              </i18n-t>
             </template>
             <USelect
               v-model="config.ai.provider"
-              class="w-auto"
+              class="w-full"
               :items="aiProviderOptions"
             />
           </UFormField>
@@ -227,15 +272,28 @@
             </template>
             <USelect
               v-model="config.webSearch.provider"
-              class="w-auto"
+              class="w-30"
               :items="webSearchProviderOptions"
             />
           </UFormField>
-          <UFormField :label="$t('settings.webSearch.apiKey')" required>
+          <UFormField
+            :label="$t('settings.webSearch.apiKey')"
+            :required="!config.webSearch.apiBase"
+          >
             <PasswordInput
               v-model="config.webSearch.apiKey"
               class="w-full"
               :placeholder="$t('settings.webSearch.apiKey')"
+            />
+          </UFormField>
+          <UFormField
+            v-if="selectedWebSearchProvider?.supportsCustomApiBase"
+            :label="$t('settings.webSearch.apiBase')"
+          >
+            <UInput
+              v-model="config.webSearch.apiBase"
+              class="w-full"
+              :placeholder="webSearchApiBase"
             />
           </UFormField>
           <UFormField :label="$t('settings.webSearch.queryLanguage')">
@@ -266,6 +324,27 @@
               :step="1"
             />
           </UFormField>
+
+          <!-- Tavily-specific settings -->
+          <template v-if="config.webSearch.provider === 'tavily'">
+            <UFormField
+              :label="$t('settings.webSearch.providers.tavily.advancedSearch')"
+              :help="$t('settings.webSearch.providers.tavily.advancedSearchHelp')"
+            >
+              <USwitch v-model="config.webSearch.tavilyAdvancedSearch" />
+            </UFormField>
+            <UFormField
+              :label="$t('settings.webSearch.providers.tavily.searchTopic')"
+              :help="$t('settings.webSearch.providers.tavily.searchTopicHelp')"
+            >
+              <USelect
+                v-model="config.webSearch.tavilySearchTopic"
+                class="w-30"
+                :items="tavilySearchTopicOptions"
+                placeholder="general"
+              />
+            </UFormField>
+          </template>
         </div>
       </template>
       <template #footer>

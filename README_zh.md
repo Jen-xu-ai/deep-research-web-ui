@@ -7,16 +7,26 @@
 - 🚀 **隐私安全**：所有配置和 API 请求均在浏览器端完成
 - 🕙 **实时反馈**：流式传输 AI 响应并在界面实时展示
 - 🌳 **搜索可视化**：使用树状结构展示研究过程，支持使用英文搜索词
-- 📄 **支持导出 PDF**：将最终研究报告导出为 PDF 格式
+- 📄 **支持导出 PDF**：将最终研究报告导出为 Markdown 和 PDF 格式
 - 🤖 **多模型支持**：底层使用纯提示词而非结构化输出等新特性，兼容更多大模型供应商
 
 当前支持的供应商：
 
-- AI 服务：OpenAPI 每月 1000 次免费搜索）、Firecrawl
 
-喜欢本项目请点 ⭐ 收藏！ <video width="500" src="https://github.com/user-attachments/assets/8f9baa43-a74e-4613-aebb-1bcc29a686f0" controls></video>
+- AI 服务：OpenAI compatible, SiliconFlow, DeepSeek, OpenRouter, Ollama 等
+- 联网搜索服务：Tavily (每月 1000 次免费搜索), Firecrawl（支持自部署）
+
+喜欢本项目请点 ⭐ 收藏！
+
+ <video width="500" src="https://github.com/user-attachments/assets/8f9baa43-a74e-4613-aebb-1bcc29a686f0" controls></video>
 
 ## 近期更新
+
+25/02/18 - 25/02/20
+
+- Tavily 支持配置“高质量搜索”和“搜索领域”选项
+- Firecrawl 支持自部署
+- 总体稳定性改进，降低了出现“无效 JSON 结构”错误的概率
 
 25/02/17
 
@@ -117,3 +127,7 @@ pnpm preview
 ## 许可协议
 
 MIT 协议
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=AnotiaWang/deep-research-web-ui&type=Date)](https://star-history.com/#AnotiaWang/deep-research-web-ui&Date)

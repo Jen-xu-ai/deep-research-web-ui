@@ -19,15 +19,21 @@ type WebSearchFunction = (
 ) => Promise<WebSearchResult[]>
 
 export const useWebSearch = (): WebSearchFunction => {
-  const { config } = useConfigStore()
+  const { config, webSearchApiBase } = useConfigStore()
 
   switch (config.webSearch.provider) {
     case 'firecrawl': {
       const fc = new Firecrawl({
         apiKey: config.webSearch.apiKey,
+        apiUrl: webSearchApiBase,
       })
       return async (q: string, o: WebSearchOptions) => {
-        const results = await fc.search(q, o)
+        const results = await fc.search(q, {
+          ...o,
+          scrapeOptions: {
+            formats: ['markdown']
+          }
+        })
         if (results.error) {
           throw new Error(results.error)
         }
@@ -46,7 +52,11 @@ export const useWebSearch = (): WebSearchFunction => {
         apiKey: config.webSearch.apiKey,
       })
       return async (q: string, o: WebSearchOptions) => {
-        const results = await tvly.search(q, o)
+        const results = await tvly.search(q, {
+          ...o,
+          searchDepth: config.webSearch.tavilyAdvancedSearch ? 'advanced' : 'basic',
+          topic: config.webSearch.tavilySearchTopic,
+        })
         return results.results
           .filter((x) => !!x?.content && !!x.url)
           .map((r) => ({

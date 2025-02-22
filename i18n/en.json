@@ -22,7 +22,11 @@
       "providers": {
         "openaiCompatible": {
           "title": "OpenAI Compatible",
-          "description": "e.g. OpenAI, Gemini, Together AI, SiliconCloud, ...\n(Note: DeepSeek, OpenRouter and Ollama now have their own providers.)"
+          "description": "Every provider that is compatible with the OpenAI API. Note: Some providers have their own options for better performance."
+        },
+        "siliconflow": {
+          "title": "SiliconFlow",
+          "description": "Offers ¥14 free credits on register. Get one API key at {0}."
         }
       }
     },
@@ -33,14 +37,19 @@
       "queryLanguageHelp": "The language of the search query. Useful if you want to get search results in a different language.\nWhen writing conclusions, the AI model will still use the language same as the web UI.",
       "providers": {
         "tavily": {
-          "help": "Similar to Firecrawl, but provides 1000 free credits / month. Get one API key at {0}."
+          "help": "Similar to Firecrawl, but provides 1000 free credits / month. Get one API key at {0}.",
+          "advancedSearch": "Advanced Search",
+          "advancedSearchHelp": "Get higher quality search results. Costs 1 extra credit each time.",
+          "searchTopic": "Search Topic",
+          "searchTopicHelp": "Optimize the search for the selected topic with tailored and curated information. Defaults to 'general'."
         },
         "firecrawl": {
-          "help": "Get one API key at {0}."
+          "help": "Get one API key at {0} if you are using the official service."
         }
       },
       "concurrencyLimitHelp": "Limit the concurrent search tasks. This is useful to avoid overloading the search provider and causing requests to fail.",
-      "concurrencyLimit": "Concurrency Limit"
+      "concurrencyLimit": "Concurrency Limit",
+      "apiBase": "API Base URL"
     }
   },
   "researchTopic": {
@@ -70,7 +79,6 @@
     "clickToView": "Click a child node to view details.",
     "nodeDetails": "Node Details",
     "startNode": {
-      "label": "Start",
       "description": "This is the beginning of your deep research journey!"
     },
     "researchGoal": "Research Goal",

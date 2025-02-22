@@ -1,5 +1,4 @@
 import { streamText } from 'ai'
-import pLimit from 'p-limit'
 import { z } from 'zod'
 import { parseStreamingJson, type DeepPartial } from '~/utils/json'
 
@@ -19,7 +18,7 @@ export interface WriteFinalReportParams {
   learnings: string[]
   language: string
 }
-// useRuntimeConfig()
+
 // Used for streaming response
 export type SearchQuery = z.infer<typeof searchQueriesTypeSchema>['queries'][0]
 export type PartialSearchQuery = DeepPartial<SearchQuery>
@@ -92,22 +91,24 @@ export function generateSearchQueries({
   const schema = z.object({
     queries: z
       .array(
-        z.object({
-          query: z.string().describe('The SERP query'),
-          researchGoal: z
-            .string()
-            .describe(
-              'First talk about the goal of the research that this query is meant to accomplish, then go deeper into how to advance the research once the results are found, mention additional research directions. Be as specific as possible, especially for additional research directions.',
-            ),
-        }),
+        z
+          .object({
+            query: z.string().describe('The SERP query.'),
+            researchGoal: z
+              .string()
+              .describe(
+                'First talk about the goal of the research that this query is meant to accomplish, then go deeper into how to advance the research once the results are found, mention additional research directions. Be as specific as possible, especially for additional research directions. JSON reserved words should be escaped.',
+              ),
+          })
+          .required({ query: true, researchGoal: true }),
       )
       .describe(`List of SERP queries, max of ${numQueries}`),
   })
   const jsonSchema = JSON.stringify(zodToJsonSchema(schema))
   let lp = languagePrompt(language)
 
-  if (searchLanguage !== language) {
-    lp += `Use ${searchLanguage} for the SERP queries.`
+  if (searchLanguage && searchLanguage !== language) {
+    lp += ` Use ${searchLanguage} for the SERP queries.`
   }
   const prompt = [
     `Given the following prompt from the user, generate a list of SERP queries to research the topic. Return a maximum of ${numQueries} queries, but feel free to return less if the original prompt is clear. Make sure each query is unique and not similar to each other: <prompt>${query}</prompt>\n\n`,
@@ -240,12 +241,6 @@ export async function deepResearch({
   const { t } = useNuxtApp().$i18n
   const language = t('language', {}, { locale: languageCode })
   const globalLimit = usePLimit()
-
-  onProgress({
-    type: 'generating_query',
-    nodeId,
-    result: {},
-  })
 
   try {
     const searchQueriesResult = generateSearchQueries({
@@ -409,7 +404,7 @@ export async function deepResearch({
             onProgress({
               type: 'node_complete',
               result: {
-                learnings: allLearnings,
+                learnings: searchResult.learnings ?? [],
                 followUpQuestions: searchResult.followUpQuestions ?? [],
               },
               nodeId: childNodeId(nodeId, i),
@@ -443,6 +438,7 @@ export async function deepResearch({
                   currentDepth: nextDepth,
                   nodeId: childNodeId(nodeId, i),
                   languageCode,
+                  searchLanguage,
                 })
                 return r
               } catch (error) {
