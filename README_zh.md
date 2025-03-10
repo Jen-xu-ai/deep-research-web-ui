@@ -12,15 +12,35 @@
 
 当前支持的供应商：
 
-
 - AI 服务：OpenAI compatible, SiliconFlow, DeepSeek, OpenRouter, Ollama 等
 - 联网搜索服务：Tavily (每月 1000 次免费搜索), Firecrawl（支持自部署）
 
 喜欢本项目请点 ⭐ 收藏！
 
- <video width="500" src="https://github.com/user-attachments/assets/8f9baa43-a74e-4613-aebb-1bcc29a686f0" controls></video>
+<video width="500" src="https://github.com/user-attachments/assets/8f9baa43-a74e-4613-aebb-1bcc29a686f0" controls></video>
 
 ## 近期更新
+
+25/03/09
+
+- 新增：AI 供应商支持 InfiniAI
+- 改进：AI 大模型的 prompts
+- 改进：改进了重试失败时的处理
+- 改进：在没有填 API key 的时候也尝试拉取模型列表
+
+25/02/27
+
+- 新增：研究报告中新增了来源引用信息
+- 改进：改善了中文的输出格式
+- 改进：在“研究主题”表单中开放了更高的“深度”和“广度”（也可以手动填入更大的值）
+- 修复：修复了搜索节点详情可能出现文字溢出的问题
+- 其它：界面样式改进
+
+25/02/24
+
+- 新增：搜索流程图支持放大到全屏。可以更方便地追踪整个搜索流程了。
+- 改动：“导出 PDF”功能改为使用浏览器原生的打印能力，这样能确保排版和展示的一致，并且不再需要单独下载中文字体。
+- 修复：“上下文大小”设置未生效问题
 
 25/02/22
 
@@ -45,6 +65,9 @@
 - 使用 VueFlow 重构了搜索可视化功能
 - 一些样式和 bug 修复
 
+<details>
+<summary>早期更新</summary>
+
 25/02/15
 
 - AI 提供商支持 DeepSeek，OpenRouter 和 Ollama，联网搜索支持 Firecrawl
@@ -63,6 +86,7 @@
 - 支持配置搜索时使用的语言
 - 支持 Docker 部署
 - 修复“导出 PDF”不可用的问题
+</details>
 
 ## 使用指南
 

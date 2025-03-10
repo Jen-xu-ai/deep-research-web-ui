@@ -15,7 +15,7 @@ Features:
 
 Currently available providers:
 
-- AI: OpenAI compatible, SiliconFlow, DeepSeek, OpenRouter, Ollama and more
+- AI: OpenAI compatible, SiliconFlow, Infiniai, DeepSeek, OpenRouter, Ollama and more
 - Web Search: Tavily (1000 free credits / month), Firecrawl (cloud / self-hosted)
 
 Please give a 🌟 Star if you like this project!
@@ -23,6 +23,27 @@ Please give a 🌟 Star if you like this project!
 <video width="500" src="https://github.com/user-attachments/assets/8f9baa43-a74e-4613-aebb-1bcc29a686f0" controls></video>
 
 ## Recent updates
+
+25/03/09
+
+- Added: InifiniAI support
+- Improved LLM prompts
+- Improved error handling
+- Improved: Try to fetch model list even when no API key is provided
+
+25/02/27
+
+- Added: Citations in research report
+- Improved: Chinese output layout
+- Improved: Increased max width and breadth in the form
+- Fixed: Text overflow issues for web search node details
+- Fixed: general UI style issues
+
+25/02/24
+
+- Added: Fullscreen mode for the search flow. This helps you to focus on the search process better.
+- Changed: "Export PDF" now uses the browser's native print ability. This fixes layout issues and emilinates font problems.
+- Fixed: "Context Size" setting are not correctly applied
 
 25/02/22
 
@@ -47,6 +68,9 @@ Please give a 🌟 Star if you like this project!
 - Refactored the search visualization using VueFlow
 - Style & bug fixes
 
+<details>
+<summary>Older updates</summary>
+
 25/02/15
 
 - Added AI providers DeepSeek, OpenRouter and Ollama; Added web search provider Firecrawl
@@ -65,6 +89,7 @@ Please give a 🌟 Star if you like this project!
 - Supported searching in different languages
 - Added Docker support
 - Fixed "export as PDF" issues
+</details>
 
 ## How to use
 

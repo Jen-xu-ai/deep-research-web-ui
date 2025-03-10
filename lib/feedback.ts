@@ -4,6 +4,8 @@ import { zodToJsonSchema } from 'zod-to-json-schema'
 
 import { languagePrompt, systemPrompt } from './prompt'
 import { useAiModel } from '~/composables/useAiProvider'
+import { parseStreamingJson, type DeepPartial } from '~~/utils/json'
+import { throwAiError } from '~~/utils/errors'
 
 type PartialFeedback = DeepPartial<z.infer<typeof feedbackTypeSchema>>
 
@@ -27,7 +29,8 @@ export function generateFeedback({
   })
   const jsonSchema = JSON.stringify(zodToJsonSchema(schema))
   const prompt = [
-    `Given the following query from the user, ask ${numQuestions} follow up questions to clarify the research direction. Return a maximum of ${numQuestions} questions, but feel free to return less if the original query is clear: <query>${query}</query>`,
+    `Given the following query from the user, ask several follow up questions to clarify the research direction. Return a maximum of ${numQuestions} questions. Feel free to return less if the original query is clear, but always provide at least 1 question.`,
+    `<query>${query}</query>`,
     `You MUST respond in JSON matching this JSON schema: ${jsonSchema}`,
     languagePrompt(language),
   ].join('\n\n')
@@ -37,8 +40,7 @@ export function generateFeedback({
     system: systemPrompt(),
     prompt,
     onError({ error }) {
-      console.error(`generateFeedback`, error)
-      throw error
+      throwAiError('generateFeedback', error)
     },
   })
 

@@ -1,22 +1,22 @@
 import { streamText } from 'ai'
 import { z } from 'zod'
-import { parseStreamingJson, type DeepPartial } from '~/utils/json'
+import { parseStreamingJson, type DeepPartial } from '~~/utils/json'
 
 import { trimPrompt } from './ai/providers'
 import { languagePrompt, systemPrompt } from './prompt'
 import zodToJsonSchema from 'zod-to-json-schema'
-import { useAiModel } from '~/composables/useAiProvider'
-import type { Locale } from '~/components/LangSwitcher.vue'
-import type { DeepResearchNode } from '~/components/DeepResearch/DeepResearch.vue'
+import { useAiModel } from '@/composables/useAiProvider'
+import type { Locale } from '@/components/LangSwitcher.vue'
+import type { DeepResearchNode } from '@/components/DeepResearch/DeepResearch.vue'
+import { throwAiError } from '~~/utils/errors'
 
 export type ResearchResult = {
-  learnings: string[]
-  visitedUrls: string[]
+  learnings: ProcessedSearchResult['learnings']
 }
 
 export interface WriteFinalReportParams {
   prompt: string
-  learnings: string[]
+  learnings: ProcessedSearchResult['learnings']
   language: string
 }
 
@@ -59,7 +59,7 @@ export type ResearchStep =
       nodeId: string
     }
   | { type: 'error'; message: string; nodeId: string }
-  | { type: 'complete'; learnings: string[]; visitedUrls: string[] }
+  | { type: 'complete'; learnings: ProcessedSearchResult['learnings'] }
 
 /**
  * Schema for {@link generateSearchQueries} without dynamic descriptions
@@ -73,7 +73,7 @@ export const searchQueriesTypeSchema = z.object({
   ),
 })
 
-// take en user query, return a list of SERP queries
+// take an user query, return a list of SERP queries
 export function generateSearchQueries({
   query,
   numQueries = 3,
@@ -112,7 +112,7 @@ export function generateSearchQueries({
     lp += ` Use ${searchLanguage} for the SERP queries.`
   }
   const prompt = [
-    `Given the following prompt from the user, generate a list of SERP queries to research the topic. Return a maximum of ${numQueries} queries, but feel free to return less if the original prompt is clear. Make sure each query is unique and not similar to each other: <prompt>${query}</prompt>\n\n`,
+    `Given the following prompt from the user, generate a list of highly effective Google search queries to research the topic. Return a maximum of ${numQueries} queries, but feel free to return less if the original prompt is clear. Make sure each query is creative, unique and not similar to each other: <prompt>${query}</prompt>`,
     learnings
       ? `Here are some learnings from previous research, use them to generate more specific queries: ${learnings.join(
           '\n',
@@ -126,19 +126,27 @@ export function generateSearchQueries({
     system: systemPrompt(),
     prompt,
     onError({ error }) {
-      throw error
+      throwAiError('generateSearchQueries', error)
     },
   })
 }
 
 export const searchResultTypeSchema = z.object({
-  learnings: z.array(z.string()),
+  learnings: z.array(
+    z.object({
+      url: z.string(),
+      learning: z.string(),
+      /** This is added in {@link deepResearch} */
+      title: z.string().optional(),
+    }),
+  ),
   followUpQuestions: z.array(z.string()),
 })
+
 function processSearchResult({
   query,
   results,
-  numLearnings = 3,
+  numLearnings = 5,
   numFollowUpQuestions = 3,
   language,
 }: {
@@ -150,20 +158,36 @@ function processSearchResult({
 }) {
   const schema = z.object({
     learnings: z
-      .array(z.string())
-      .describe(`List of learnings, max of ${numLearnings}`),
+      .array(
+        z.object({
+          url: z
+            .string()
+            .describe('The source URL from which this learning was extracted'),
+          learning: z
+            .string()
+            .describe(
+              'A detailed, information-dense insight extracted from the search results. Include specific entities, metrics, numbers, and dates when available',
+            ),
+        }),
+      )
+      .describe(
+        `Collection of key learnings extracted from search results, each with its source URL. Maximum of ${numLearnings} learnings.`,
+      ),
     followUpQuestions: z
       .array(z.string())
       .describe(
-        `List of follow-up questions to research the topic further, max of ${numFollowUpQuestions}`,
+        `List of relevant follow-up questions to explore the topic further, designed to uncover additional insights. Maximum of ${numFollowUpQuestions} questions.`,
       ),
   })
   const jsonSchema = JSON.stringify(zodToJsonSchema(schema))
-  const contents = results.map((item) => trimPrompt(item.content, 25_000))
+  const contents = results.map((item) => trimPrompt(item.content))
   const prompt = [
-    `Given the following contents from a SERP search for the query <query>${query}</query>, generate a list of learnings from the contents. Return a maximum of ${numLearnings} learnings, but feel free to return less if the contents are clear. Make sure each learning is unique and not similar to each other. The learnings should be concise and to the point, as detailed and information dense as possible. Make sure to include any entities like people, places, companies, products, things, etc in the learnings, as well as any exact metrics, numbers, or dates. The learnings will be used to research the topic further.`,
+    `Given the following contents from a SERP search for the query <query>${query}</query>, extract ${numLearnings} key learnings from the contents. Make sure each learning is unique and not similar to each other. The learnings should be as detailed and information dense as possible. Include any entities like people, places, companies, products, things, etc in the learnings, as well as any exact metrics, numbers, or dates. Also generate up to ${numFollowUpQuestions} follow-up questions that could help explore this topic further.`,
     `<contents>${contents
-      .map((content) => `<content>\n${content}\n</content>`)
+      .map(
+        (content, index) =>
+          `<content url="${results[index]!.url}">\n${content}\n</content>`,
+      )
       .join('\n')}</contents>`,
     `You MUST respond in JSON matching this JSON schema: ${jsonSchema}`,
     languagePrompt(language),
@@ -174,7 +198,7 @@ function processSearchResult({
     system: systemPrompt(),
     prompt,
     onError({ error }) {
-      throw error
+      throwAiError('processSearchResult', error)
     },
   })
 }
@@ -186,16 +210,20 @@ export function writeFinalReport({
 }: WriteFinalReportParams) {
   const learningsString = trimPrompt(
     learnings
-      .map((learning) => `<learning>\n${learning}\n</learning>`)
+      .map(
+        (learning, index) =>
+          `<learning index="${index + 1}">
+${learning.learning}
+</learning>`,
+      )
       .join('\n'),
-    150_000,
   )
   const _prompt = [
-    `Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as as detailed as possible, aim for 3 or more pages, include ALL the learnings from research:`,
+    `Given the following prompt from the user, write a final report on the topic using the learnings from research. Make it as detailed as possible, aim for 3 or more pages, include ALL the key insights from research.`,
     `<prompt>${prompt}</prompt>`,
     `Here are all the learnings from previous research:`,
     `<learnings>\n${learningsString}\n</learnings>`,
-    `Write the report using Markdown.`,
+    `Write the report using Markdown. Be factual, NEVER lie or make things up. Cite learnings from previous research when needed, using numbered citations like "[1]". Each citation should correspond to the index of the source in your learnings list. DO NOT include the actual URLs in the report text - only use the citation numbers.`,
     languagePrompt(language),
     `## Deep Research Report`,
   ].join('\n\n')
@@ -205,7 +233,7 @@ export function writeFinalReport({
     system: systemPrompt(),
     prompt: _prompt,
     onError({ error }) {
-      throw error
+      throwAiError('writeFinalReport', error)
     },
   })
 }
@@ -219,8 +247,8 @@ export async function deepResearch({
   breadth,
   maxDepth,
   languageCode,
-  learnings = [],
-  visitedUrls = [],
+  searchLanguageCode,
+  learnings,
   onProgress,
   currentDepth,
   nodeId = '0',
@@ -229,12 +257,12 @@ export async function deepResearch({
   query: string
   breadth: number
   maxDepth: number
-  /** Language code for SERP queries and web searches */
+  /** The language of generated response */
   languageCode: Locale
+  /** The language of SERP query */
+  searchLanguageCode?: Locale
   /** Accumulated learnings from all nodes visited so far */
-  learnings?: string[]
-  /** Accumulated visited URLs from all nodes visited so far */
-  visitedUrls?: string[]
+  learnings?: Array<{ url: string; learning: string }>
   currentDepth: number
   /** Current node ID. Used for recursive calls */
   nodeId?: string
@@ -244,6 +272,9 @@ export async function deepResearch({
 }): Promise<ResearchResult> {
   const { t } = useNuxtApp().$i18n
   const language = t('language', {}, { locale: languageCode })
+  const searchLanguage = searchLanguageCode
+    ? t('language', {}, { locale: searchLanguageCode })
+    : undefined
   const globalLimit = usePLimit()
 
   try {
@@ -264,10 +295,10 @@ export async function deepResearch({
     else {
       const searchQueriesResult = generateSearchQueries({
         query,
-        learnings,
+        learnings: learnings?.map((item) => item.learning),
         numQueries: breadth,
         language,
-        searchLanguage: language,
+        searchLanguage,
       })
 
       for await (const chunk of parseStreamingJson(
@@ -288,8 +319,8 @@ export async function deepResearch({
           for (let i = 0; i < searchQueries.length; i++) {
             onProgress({
               type: 'generating_query',
-              result: searchQueries[i],
-              nodeId: searchQueries[i].nodeId,
+              result: searchQueries[i]!,
+              nodeId: searchQueries[i]!.nodeId,
               parentNodeId: nodeId,
             })
           }
@@ -357,8 +388,6 @@ export async function deepResearch({
               `[DeepResearch] Searched "${searchQuery.query}", found ${results.length} contents`,
             )
 
-            // Collect URLs from this search
-            const newUrls = results.map((item) => item.url).filter(Boolean)
             onProgress({
               type: 'search_complete',
               results,
@@ -414,11 +443,17 @@ export async function deepResearch({
               `Processed search result for ${searchQuery.query}`,
               searchResult,
             )
+            // Assign URL titles to learnings
+            searchResult.learnings = searchResult.learnings?.map((learning) => {
+              return {
+                ...learning,
+                title: results.find((r) => r.url === learning.url)?.title,
+              }
+            })
             const allLearnings = [
-              ...learnings,
+              ...(learnings ?? []),
               ...(searchResult.learnings ?? []),
             ]
-            const allUrls = [...visitedUrls, ...newUrls]
             const nextDepth = currentDepth + 1
 
             onProgress({
@@ -453,7 +488,6 @@ export async function deepResearch({
                   breadth: nextBreadth,
                   maxDepth,
                   learnings: allLearnings,
-                  visitedUrls: allUrls,
                   onProgress,
                   currentDepth: nextDepth,
                   nodeId: searchQuery.nodeId,
@@ -468,7 +502,6 @@ export async function deepResearch({
             } else {
               return {
                 learnings: allLearnings,
-                visitedUrls: allUrls,
               }
             }
           } catch (e: any) {
@@ -483,26 +516,33 @@ export async function deepResearch({
             })
             return {
               learnings: [],
-              visitedUrls: [],
             }
           }
         }),
       ),
     )
     // Conclude results
-    const _learnings = [...new Set(results.flatMap((r) => r.learnings))]
-    const _visitedUrls = [...new Set(results.flatMap((r) => r.visitedUrls))]
+    // Deduplicate
+    const urlMap = new Map<string, true>()
+    const finalLearnings: ProcessedSearchResult['learnings'] = []
+
+    for (const result of results) {
+      for (const learning of result.learnings) {
+        if (!urlMap.has(learning.url)) {
+          urlMap.set(learning.url, true)
+          finalLearnings.push(learning)
+        }
+      }
+    }
     // Complete should only be called once
     if (nodeId === '0') {
       onProgress({
         type: 'complete',
-        learnings: _learnings,
-        visitedUrls: _visitedUrls,
+        learnings: finalLearnings,
       })
     }
     return {
-      learnings: _learnings,
-      visitedUrls: _visitedUrls,
+      learnings: finalLearnings,
     }
   } catch (error: any) {
     console.error(error)
@@ -513,7 +553,6 @@ export async function deepResearch({
     })
     return {
       learnings: [],
-      visitedUrls: [],
     }
   }
 }
